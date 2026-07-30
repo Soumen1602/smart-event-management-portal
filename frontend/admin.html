@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Dashboard — Smart Event Management Portal</title>
+  <meta name="description" content="Admin dashboard to add, edit, and delete events. Manage bookings and view platform statistics." />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- ═══════════════════════════════════════════════
+       NAVIGATION
+       ═══════════════════════════════════════════════ -->
+  <nav class="nav" role="navigation" aria-label="Main navigation">
+    <div class="nav__inner">
+      <a href="events.html" class="nav__logo" aria-label="SEMP home">
+        <span class="nav__logo-dot"></span>
+        SEMP
+      </a>
+      <ul class="nav__links" id="navLinks" role="menubar">
+        <li role="none">
+          <a href="events.html" class="nav__link" role="menuitem">
+            <svg viewBox="0 0 20 20" fill="currentColor" width="16" aria-hidden="true"><path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd"/></svg>
+            Events
+          </a>
+        </li>
+        <li role="none">
+          <a href="history.html" class="nav__link" role="menuitem">
+            <svg viewBox="0 0 20 20" fill="currentColor" width="16" aria-hidden="true"><path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"/><path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd"/></svg>
+            My Bookings
+          </a>
+        </li>
+        <li role="none" id="adminNavLink" style="display:none">
+          <a href="admin.html" class="nav__link" role="menuitem">
+            <svg viewBox="0 0 20 20" fill="currentColor" width="16" aria-hidden="true"><path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd"/></svg>
+            Admin
+          </a>
+        </li>
+      </ul>
+      <div class="nav__actions">
+        <span class="nav__user-badge" id="navUser"></span>
+        <button id="darkModeToggle" class="btn-icon" aria-label="Toggle dark mode" title="Dark mode">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M12 3a9 9 0 1 0 9 9c0-.46-.04-.92-.1-1.36a5.389 5.389 0 0 1-4.4 2.26 5.403 5.403 0 0 1-3.14-9.8c-.44-.06-.9-.1-1.36-.1z"/></svg>
+        </button>
+        <a href="#" id="logoutBtn" class="btn btn--ghost btn--sm" role="button">Sign out</a>
+        <button class="nav__burger" id="navBurger" aria-expanded="false" aria-label="Open menu" aria-controls="navLinks">
+          <span class="burger-icon">☰</span>
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ═══════════════════════════════════════════════
+       MAIN CONTENT
+       ═══════════════════════════════════════════════ -->
+  <main class="page-wrapper">
+    <div class="container">
+
+      <!-- Page header -->
+      <header class="page-header animate-fade-up" style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:var(--sp-4)">
+        <div>
+          <p class="page-header__eyebrow">Admin Area</p>
+          <h1 class="page-header__title">Dashboard</h1>
+          <p class="page-header__subtitle">Manage events, track bookings, and monitor platform stats.</p>
+        </div>
+        <!-- "Add Event" toggle button -->
+        <button id="toggleAddForm" class="btn btn--accent" style="margin-top:var(--sp-3);align-self:flex-end" aria-expanded="false" aria-controls="addEventSection">
+          +&nbsp;&nbsp;Add New Event
+        </button>
+      </header>
+
+      <!-- ── Stats bar ── -->
+      <div class="admin-stats stagger animate-fade-up" style="animation-delay:100ms" role="region" aria-label="Platform statistics">
+
+        <div class="admin-stat">
+          <div class="admin-stat__icon" aria-hidden="true">📅</div>
+          <div class="admin-stat__value" id="statTotalEvents">—</div>
+          <div class="admin-stat__label">Total Events</div>
+        </div>
+
+        <div class="admin-stat">
+          <div class="admin-stat__icon" aria-hidden="true">🎟</div>
+          <div class="admin-stat__value" id="statTotalBookings">—</div>
+          <div class="admin-stat__label">Bookings Made</div>
+        </div>
+
+        <div class="admin-stat">
+          <div class="admin-stat__icon" aria-hidden="true">💰</div>
+          <div class="admin-stat__value" id="statTotalRevenue">—</div>
+          <div class="admin-stat__label">Total Revenue</div>
+        </div>
+
+        <div class="admin-stat">
+          <div class="admin-stat__icon" aria-hidden="true">💺</div>
+          <div class="admin-stat__value" id="statSeatsAvail">—</div>
+          <div class="admin-stat__label">Seats Available</div>
+        </div>
+
+      </div>
+
+      <!-- ── Add Event collapsible section ── -->
+      <div id="addEventSection" class="add-event-section" role="region" aria-label="Add new event form">
+        <form id="addEventForm" class="add-event-form" novalidate aria-label="Add event">
+
+          <h3 style="font-family:var(--font-display);margin-bottom:var(--sp-2)">New Event Details</h3>
+
+          <!-- Row 1: title + category -->
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label" for="evtTitle">Event Title <span class="required">*</span></label>
+              <input class="form-input" type="text" id="evtTitle" name="evtTitle" placeholder="e.g. Jazz Night at The Foundry" required />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="evtCategory">Category <span class="required">*</span></label>
+              <select class="form-select" id="evtCategory" name="evtCategory" required>
+                <option value="">Select a category</option>
+                <option value="Music">Music</option>
+                <option value="Conference">Conference</option>
+                <option value="Food">Food</option>
+                <option value="Art">Art</option>
+                <option value="Sports">Sports</option>
+                <option value="Workshop">Workshop</option>
+                <option value="Film">Film</option>
+                <option value="Business">Business</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Row 2: date + location -->
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label" for="evtDate">Date &amp; Time <span class="required">*</span></label>
+              <input class="form-input" type="datetime-local" id="evtDate" name="evtDate" required />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="evtLocation">Venue / Location <span class="required">*</span></label>
+              <input class="form-input" type="text" id="evtLocation" name="evtLocation" placeholder="e.g. Madison Square Garden, NYC" required />
+            </div>
+          </div>
+
+          <!-- Row 3: price + seats + colour -->
+          <div class="form-grid" style="grid-template-columns:1fr 1fr auto">
+            <div class="form-group">
+              <label class="form-label" for="evtPrice">Ticket Price ($) <span class="required">*</span></label>
+              <input class="form-input" type="number" id="evtPrice" name="evtPrice" placeholder="0 for free" min="0" step="0.01" value="0" required />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="evtSeats">Total Seats <span class="required">*</span></label>
+              <input class="form-input" type="number" id="evtSeats" name="evtSeats" placeholder="e.g. 200" min="1" required />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="evtColor">Card Colour</label>
+              <div class="color-input-wrapper">
+                <input class="form-color" type="color" id="evtColor" name="evtColor" value="#C8521A" aria-label="Choose card banner colour" />
+              </div>
+            </div>
+          </div>
+
+          <!-- Description -->
+          <div class="form-group">
+            <label class="form-label" for="evtDesc">Description</label>
+            <textarea class="form-textarea" id="evtDesc" name="evtDesc" rows="3" placeholder="Describe the event in a few sentences…"></textarea>
+          </div>
+
+          <!-- Actions -->
+          <div style="display:flex;gap:var(--sp-3);justify-content:flex-end">
+            <button type="button" id="cancelAddForm" class="btn btn--ghost" onclick="document.getElementById('addEventSection').classList.remove('section--open'); document.getElementById('toggleAddForm').textContent='+\u00a0\u00a0Add New Event'; document.getElementById('toggleAddForm').classList.add('btn--accent'); document.getElementById('toggleAddForm').classList.remove('btn--outline');">
+              Cancel
+            </button>
+            <button type="submit" class="btn btn--accent" id="addEventSubmitBtn">
+              <svg viewBox="0 0 20 20" fill="currentColor" width="16" aria-hidden="true"><path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd"/></svg>
+              Add Event
+            </button>
+          </div>
+
+        </form>
+      </div>
+
+      <!-- ── Events table ── -->
+      <section class="animate-fade-up" style="animation-delay:200ms" aria-label="Events management table">
+
+        <div class="section-header">
+          <h2 class="section-title">All Events</h2>
+        </div>
+
+        <div class="events-table-wrapper">
+          <table class="events-table" id="eventsTable" role="grid" aria-label="Events list">
+            <thead>
+              <tr>
+                <th scope="col">Event</th>
+                <th scope="col">Category</th>
+                <th scope="col">Date</th>
+                <th scope="col">Location</th>
+                <th scope="col">Price</th>
+                <th scope="col">Seats Left / Total</th>
+                <th scope="col">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="eventsTableBody">
+              <!-- Rows rendered by initAdminPage() in script.js -->
+              <tr>
+                <td colspan="7" class="table-empty">Loading events…</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+      </section>
+
+    </div><!-- /container -->
+  </main>
+
+  <!-- ═══════════════════════════════════════════════
+       EDIT EVENT MODAL
+       ═══════════════════════════════════════════════ -->
+  <div
+    class="modal-overlay"
+    id="editModal"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="editModalTitle"
+  >
+    <div class="modal" role="document">
+
+      <!-- Modal header -->
+      <div class="modal__header">
+        <h2 class="modal__title" id="editModalTitle">Edit Event</h2>
+        <button class="modal__close" id="closeModal" aria-label="Close edit modal">✕</button>
+      </div>
+
+      <!-- Modal body: edit form -->
+      <form id="editEventForm" novalidate aria-label="Edit event details">
+        <div class="modal__body">
+
+          <!-- Title + category -->
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label" for="editTitle">Event Title <span class="required">*</span></label>
+              <input class="form-input" type="text" id="editTitle" name="editTitle" required />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="editCategory">Category <span class="required">*</span></label>
+              <select class="form-select" id="editCategory" name="editCategory" required>
+                <option value="Music">Music</option>
+                <option value="Conference">Conference</option>
+                <option value="Food">Food</option>
+                <option value="Art">Art</option>
+                <option value="Sports">Sports</option>
+                <option value="Workshop">Workshop</option>
+                <option value="Film">Film</option>
+                <option value="Business">Business</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Date + location -->
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label" for="editDate">Date &amp; Time <span class="required">*</span></label>
+              <input class="form-input" type="datetime-local" id="editDate" name="editDate" required />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="editLocation">Location <span class="required">*</span></label>
+              <input class="form-input" type="text" id="editLocation" name="editLocation" required />
+            </div>
+          </div>
+
+          <!-- Price + total seats + seats left + colour -->
+          <div class="form-grid" style="grid-template-columns:1fr 1fr 1fr auto">
+            <div class="form-group">
+              <label class="form-label" for="editPrice">Price ($)</label>
+              <input class="form-input" type="number" id="editPrice" name="editPrice" min="0" step="0.01" />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="editSeats">Total Seats</label>
+              <input class="form-input" type="number" id="editSeats" name="editSeats" min="1" />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="editSeatsLeft">Seats Left</label>
+              <input class="form-input" type="number" id="editSeatsLeft" name="editSeatsLeft" min="0" />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="editColor">Colour</label>
+              <div class="color-input-wrapper">
+                <input class="form-color" type="color" id="editColor" name="editColor" aria-label="Card banner colour" />
+              </div>
+            </div>
+          </div>
+
+          <!-- Description -->
+          <div class="form-group">
+            <label class="form-label" for="editDesc">Description</label>
+            <textarea class="form-textarea" id="editDesc" name="editDesc" rows="3"></textarea>
+          </div>
+
+        </div><!-- /modal__body -->
+
+        <!-- Modal footer: actions -->
+        <div class="modal__footer">
+          <button type="button" class="btn btn--ghost" id="cancelEditBtn" onclick="document.getElementById('editModal').classList.remove('modal--open'); document.body.classList.remove('body--modal-open');">
+            Cancel
+          </button>
+          <button type="submit" class="btn btn--accent" id="saveEventBtn">
+            <svg viewBox="0 0 20 20" fill="currentColor" width="16" aria-hidden="true"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+            Save Changes
+          </button>
+        </div>
+
+      </form>
+    </div><!-- /modal -->
+  </div><!-- /modal-overlay -->
+
+  <script src="script.js"></script>
+</body>
+</html>
