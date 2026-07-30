@@ -572,4 +572,4 @@ if __name__ == "__main__":
     database.init_db()
     print("[SEMP] Starting Flask server on http://0.0.0.0:5000")
     # debug=True is fine for local dev; set to False in production
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    app.run(host="0.0.0.0", port=5000, debug=os.environ.get("FLASK_DEBUG", "0") == "1")
