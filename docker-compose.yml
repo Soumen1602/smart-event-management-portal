@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  backend:
+    build: ./backend
+    image: soum1602/eventportal-backend:v1
+    container_name: semp-backend
+    ports:
+      - "5000:5000"
+    environment:
+      - FLASK_DEBUG=1
+    restart: always
+
+  frontend:
+    build: ./frontend
+    image: soum1602/eventportal-frontend:v1-k8s
+    container_name: semp-frontend
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend
+    restart: always
