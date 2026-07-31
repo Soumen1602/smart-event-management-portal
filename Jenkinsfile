@@ -83,10 +83,10 @@ pipeline {
                         -e FLASK_DEBUG=0 ^
                         ${BACKEND_IMAGE}:${IMAGE_TAG}
 
-                    echo Waiting for backend to initialise...
-                    timeout /t 10 /nobreak >nul
+                    echo Waiting for backend container to initialise...
+                    ping 127.0.0.1 -n 8 >nul
 
-                    echo Hitting /api/health...
+                    echo Hitting /api/health endpoint...
                     curl -s -o NUL -w "HTTP %%{http_code}" http://localhost:5999/api/health
 
                     docker rm -f semp-smoke-test 2>nul & echo .
@@ -107,7 +107,7 @@ pipeline {
                     )
                 ]) {
                     bat """
-                        docker login -u %DOCKER_USER% -p %DOCKER_PASS%
+                        echo %DOCKER_PASS%| docker login -u %DOCKER_USER% --password-stdin
 
                         docker push ${BACKEND_IMAGE}:${IMAGE_TAG}
 
@@ -224,7 +224,6 @@ pipeline {
             Common causes on Windows Jenkins:
               - Docker Desktop not running or daemon not reachable
               - Invalid dockerhub-credentials in Jenkins
-              - Backend /api/health returned non-200
               - Network issue during docker push
             ====================================================
             """
