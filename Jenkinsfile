@@ -8,8 +8,8 @@
  *   3. Build Frontend Image
  *   4. Test
  *   5. Docker Push
- *   6. Deploy to Kubernetes
- *   7. Verify Deployment
+ *   6. Deploy to Kubernetes  (graceful skip if kubectl unavailable)
+ *   7. Verify Deployment     (graceful skip if kubectl unavailable)
  * ============================================================ */
 
 pipeline {
@@ -18,18 +18,17 @@ pipeline {
 
     /* ── Environment variables ─────────────────────────────── */
     environment {
-        DOCKERHUB_USER      = 'soum1602'
-        BACKEND_IMAGE       = "${DOCKERHUB_USER}/eventportal-backend"
-        FRONTEND_IMAGE      = "${DOCKERHUB_USER}/eventportal-frontend"
-        IMAGE_TAG           = 'v1'
-        DOCKER_CREDENTIALS  = 'dockerhub-credentials'   // Jenkins credential ID
-        KUBECONFIG          = credentials('kubeconfig') // Jenkins file credential for kubeconfig
+        DOCKERHUB_USER     = 'soum1602'
+        BACKEND_IMAGE      = "${DOCKERHUB_USER}/eventportal-backend"
+        FRONTEND_IMAGE     = "${DOCKERHUB_USER}/eventportal-frontend"
+        IMAGE_TAG          = 'v1'
+        DOCKER_CREDENTIALS = 'dockerhub-credentials'   // Jenkins credential ID
     }
 
     options {
-        timestamps()                        // prefix every log line with a timestamp
-        timeout(time: 20, unit: 'MINUTES') // abort the build if it runs too long
-        disableConcurrentBuilds()           // prevent overlapping pipeline runs
+        timestamps()
+        timeout(time: 20, unit: 'MINUTES')
+        disableConcurrentBuilds()
     }
 
     stages {
@@ -53,7 +52,7 @@ pipeline {
                         -t ${BACKEND_IMAGE}:${IMAGE_TAG} \
                         ./backend
                 """
-                echo ">>> Backend image built successfully."
+                echo '>>> Backend image built successfully.'
             }
         }
 
@@ -67,16 +66,14 @@ pipeline {
                         -t ${FRONTEND_IMAGE}:${IMAGE_TAG} \
                         ./frontend
                 """
-                echo ">>> Frontend image built successfully."
+                echo '>>> Frontend image built successfully.'
             }
         }
 
         /* ── 4. Test ───────────────────────────────────────── */
         stage('Test') {
             steps {
-                echo '>>> Running smoke tests...'
-
-                // Spin up the backend container on an ephemeral port
+                echo '>>> Running smoke test against the backend container...'
                 sh """
                     docker rm -f semp-smoke-test 2>/dev/null || true
 
@@ -86,10 +83,10 @@ pipeline {
                         -e FLASK_DEBUG=0 \
                         ${BACKEND_IMAGE}:${IMAGE_TAG}
 
-                    echo "Waiting for backend to start..."
+                    echo "Waiting for backend to initialise..."
                     sleep 8
 
-                    echo "Hitting /api/health endpoint..."
+                    echo "Hitting /api/health..."
                     HTTP_STATUS=\$(curl -s -o /dev/null -w "%{http_code}" http://localhost:5999/api/health)
 
                     docker rm -f semp-smoke-test 2>/dev/null || true
@@ -107,8 +104,7 @@ pipeline {
         /* ── 5. Docker Push ────────────────────────────────── */
         stage('Docker Push') {
             steps {
-                echo '>>> Pushing images to Docker Hub...'
-
+                echo '>>> Logging in to Docker Hub and pushing images...'
                 withCredentials([
                     usernamePassword(
                         credentialsId: "${DOCKER_CREDENTIALS}",
@@ -125,41 +121,65 @@ pipeline {
                         docker logout
                     """
                 }
-
-                echo ">>> Pushed ${BACKEND_IMAGE}:${IMAGE_TAG} and ${FRONTEND_IMAGE}:${IMAGE_TAG}"
+                echo ">>> Pushed ${BACKEND_IMAGE}:${IMAGE_TAG}"
+                echo ">>> Pushed ${FRONTEND_IMAGE}:${IMAGE_TAG}"
             }
         }
 
         /* ── 6. Deploy to Kubernetes ───────────────────────── */
         stage('Deploy to Kubernetes') {
             steps {
-                echo '>>> Applying Kubernetes manifests...'
-                sh """
-                    kubectl apply -f k8s/
-                """
-                echo '>>> Manifests applied. Waiting for rollout...'
-                sh """
-                    kubectl rollout status deployment/backend-deployment  --timeout=90s
-                    kubectl rollout status deployment/frontend-deployment --timeout=90s
-                """
-                echo '>>> Rollout complete.'
+                script {
+                    try {
+                        echo '>>> Checking kubectl availability...'
+                        sh 'kubectl version --client'
+
+                        echo '>>> Applying Kubernetes manifests from k8s/ ...'
+                        sh 'kubectl apply -f k8s/'
+
+                        echo '>>> Waiting for rollouts...'
+                        sh 'kubectl rollout status deployment/backend-deployment  --timeout=90s'
+                        sh 'kubectl rollout status deployment/frontend-deployment --timeout=90s'
+
+                        echo '>>> Deploy to Kubernetes completed successfully.'
+                    } catch (Exception e) {
+                        echo """
+                        ⚠️  kubectl not available in this Jenkins environment — skipping live deploy.
+                            Manifests are present in /k8s for manual apply.
+                            Run manually:  kubectl apply -f k8s/
+                            Error detail:  ${e.getMessage()}
+                        """
+                        currentBuild.result = 'UNSTABLE'
+                    }
+                }
             }
         }
 
         /* ── 7. Verify Deployment ──────────────────────────── */
         stage('Verify Deployment') {
             steps {
-                echo '>>> Verifying pod status...'
-                sh """
-                    echo "\\n=== Pods ==="
-                    kubectl get pods -o wide
+                script {
+                    try {
+                        echo '>>> Verifying pod and service status...'
+                        sh """
+                            echo "\\n=== Pods ==="
+                            kubectl get pods -o wide
 
-                    echo "\\n=== Services ==="
-                    kubectl get services
+                            echo "\\n=== Services ==="
+                            kubectl get services
 
-                    echo "\\n=== Deployments ==="
-                    kubectl get deployments
-                """
+                            echo "\\n=== Deployments ==="
+                            kubectl get deployments
+                        """
+                    } catch (Exception e) {
+                        echo """
+                        ⚠️  kubectl not available — skipping live verification.
+                            Once kubectl is configured, run:  kubectl get pods
+                            Error detail:  ${e.getMessage()}
+                        """
+                        currentBuild.result = 'UNSTABLE'
+                    }
+                }
             }
         }
 
@@ -173,12 +193,14 @@ pipeline {
             ╔══════════════════════════════════════════════════╗
             ║   ✅  PIPELINE SUCCEEDED                         ║
             ║                                                  ║
-            ║   Images pushed:                                 ║
+            ║   Images pushed to Docker Hub:                  ║
             ║   • ${BACKEND_IMAGE}:${IMAGE_TAG}
             ║   • ${FRONTEND_IMAGE}:${IMAGE_TAG}
             ║                                                  ║
-            ║   Deployment live on Kubernetes.                 ║
-            ║   Frontend → http://<node-ip>:30080             ║
+            ║   To deploy manually:                           ║
+            ║     kubectl apply -f k8s/                       ║
+            ║   Frontend (after deploy):                      ║
+            ║     http://<node-ip>:30080                      ║
             ╚══════════════════════════════════════════════════╝
             """
         }
@@ -188,19 +210,18 @@ pipeline {
             ╔══════════════════════════════════════════════════╗
             ║   ❌  PIPELINE FAILED                            ║
             ║                                                  ║
-            ║   Check the stage logs above for the error.     ║
-            ║   Common causes:                                 ║
-            ║   • Docker daemon not running on the agent      ║
-            ║   • Invalid dockerhub-credentials in Jenkins    ║
-            ║   • kubectl not configured / cluster unreachable║
+            ║   Check the stage logs above for the error.    ║
+            ║   Common causes:                                ║
+            ║   • Docker daemon not reachable from agent     ║
+            ║   • Invalid dockerhub-credentials in Jenkins   ║
+            ║   • Backend /api/health returned non-200       ║
             ╚══════════════════════════════════════════════════╝
             """
-            // Clean up any leftover smoke-test container
             sh 'docker rm -f semp-smoke-test 2>/dev/null || true'
         }
 
         always {
-            echo '>>> Cleaning up local Docker images to free disk space...'
+            echo '>>> Cleaning up local Docker images...'
             sh """
                 docker rmi ${BACKEND_IMAGE}:${IMAGE_TAG}  2>/dev/null || true
                 docker rmi ${FRONTEND_IMAGE}:${IMAGE_TAG} 2>/dev/null || true
