@@ -19,3 +19,7 @@ env/
 
 # Node
 node_modules/
+
+# Office / Temporary files
+*.docx
+~$*
