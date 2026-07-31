@@ -70,6 +70,20 @@ def create_pdf(filename="docs/FINAL_CAPSTONE_PROJECT_REPORT.pdf"):
         pdf.write(4.5, f"{text}\n")
         pdf.ln(1)
 
+    def embed_image(img_path, caption, max_w=170, max_h=85):
+        if os.path.exists(img_path):
+            curr_y = pdf.get_y()
+            if curr_y > 210: # If near bottom of page, add page
+                pdf.add_page()
+            
+            pdf.ln(2)
+            pdf.image(img_path, x=(210 - max_w)/2, w=max_w)
+            pdf.ln(2)
+            pdf.set_font("Helvetica", "I", 8.5)
+            pdf.set_text_color(100, 100, 100)
+            pdf.cell(0, 5, f"Figure: {caption}", new_x="LMARGIN", new_y="NEXT", align="C")
+            pdf.ln(4)
+
     # 1. Executive Summary
     section_heading("1. Executive Summary")
     body_text(
@@ -79,81 +93,55 @@ def create_pdf(filename="docs/FINAL_CAPSTONE_PROJECT_REPORT.pdf"):
         "the application now supports zero-downtime updates, dynamic scaling, automated smoke testing, and quick rollback."
     )
 
-    # 2. Project Tasks & Deliverables Overview
-    section_heading("2. Core Implementation Phases & Deliverables")
+    # Architecture Diagram Screenshot
+    section_heading("2. System Architecture Diagram")
+    embed_image("docs/architecture.png", "System Architecture & CI/CD Pipeline Flow", max_w=160)
+
+    # 3. Core Implementation Phases & Deliverables
+    section_heading("3. Core Implementation Phases & Deliverables")
     
     sub_heading("Phase 1: Source Code Management (Git & GitHub)")
     bullet_item("Repository Structure", "Decoupled architecture with /frontend, /backend, /k8s, and /docs directories.")
     bullet_item("Versioning & Tags", "Pushed milestone tags: docker-v1 (initial), docker-v2 (dark mode), docker-v3 (live search).")
-    bullet_item("Documentation", "Professional README.md with architecture overview, badges, and Docker instructions.")
 
     sub_heading("Phase 2: Docker Containerization")
     bullet_item("Backend Dockerfile", "Built using official python:3.11-slim base image exposing port 5000.")
     bullet_item("Frontend Dockerfile", "Built using lightweight nginx:alpine base image exposing port 80.")
-    bullet_item("Registry Deployment", "Pushed images to Docker Hub registry under user 'soum1602'.")
 
     sub_heading("Phase 3: Kubernetes Orchestration")
-    bullet_item("Services", "Configured ClusterIP (backend:5000) for internal security and NodePort 30080 for external web access.")
-    bullet_item("Replica Scaling", "Demonstrated scaling backend replicas dynamically from 1 -> 3 -> 5 pods.")
-    bullet_item("Rollouts & Rollback", "Executed rolling updates and verified rollback capability using 'kubectl rollout undo'.")
+    bullet_item("Services", "Configured ClusterIP (backend:5000) for security and NodePort 30080 for external web access.")
+    bullet_item("Replica Scaling & Rollbacks", "Scaled backend replicas 1 -> 3 -> 5 and verified 'kubectl rollout undo'.")
 
     sub_heading("Phase 4: Jenkins CI/CD Pipeline")
     bullet_item("Declarative Pipeline", "Created 7-stage automated Jenkinsfile: Checkout -> Build -> Test -> Push -> Deploy -> Verify.")
-    bullet_item("Automated Testing", "Smoke test stage spins up container and verifies HTTP 200 on /api/health endpoint.")
 
     pdf.ln(2)
 
-    # 3. Innovation Challenge (20 Marks)
-    section_heading("3. Innovation Challenge Report (20 Marks / 10 Rubric Marks)")
+    # 4. Live UI Screenshots Section
+    section_heading("4. Live Application & Feature Screenshots")
+
+    embed_image("docs/screenshots/login.png", "Authentication & Login Screen (Demo Accounts)", max_w=150)
+    embed_image("docs/screenshots/events.png", "Event Discovery Page with Live Search & Dark Mode (Version 3)", max_w=150)
+    embed_image("docs/screenshots/booking.png", "Interactive Ticket Booking & Checkout Interface", max_w=150)
+    embed_image("docs/screenshots/admin.png", "Admin Management Dashboard for Event CRUD Operations", max_w=150)
+
+    # 5. Innovation Challenge (20 Marks)
+    section_heading("5. Innovation Challenge Report (20 Marks / 10 Rubric Marks)")
     body_text("Three innovative features were implemented beyond core requirements to enhance usability and resilience:")
 
     sub_heading("Feature 1: Dynamic Persistent Dark Mode")
-    bullet_item("Why Chosen", "Improves user accessibility and meets modern UI/UX design standards.")
-    bullet_item("How It Works", "CSS tokens with [data-theme='dark'] selector. State is stored in localStorage['semp_dark_mode'].")
-    bullet_item("Organizational Benefit", "Higher user retention, reduced eye strain, and accessible multi-theme experience.")
+    bullet_item("Why Chosen & How It Works", "CSS tokens with [data-theme='dark'] selector. State is stored in localStorage['semp_dark_mode'].")
 
     sub_heading("Feature 2: Instant Client-Side Search Engine")
-    bullet_item("Why Chosen", "Eliminates repetitive server roundtrips and page reloads during event browsing.")
-    bullet_item("How It Works", "Real-time client-side filter engine matching title, category, and seat availability.")
-    bullet_item("Organizational Benefit", "Reduces backend server API load by over 60% during peak browsing traffic.")
+    bullet_item("Why Chosen & How It Works", "Real-time client-side filter engine matching title, category, and seat availability, reducing server load by 60%.")
 
     sub_heading("Feature 3: Self-Healing Health Probes & Resilient Pipeline")
-    bullet_item("Why Chosen", "Ensures zero-downtime rolling updates and prevents CI pipeline agent deadlocks.")
-    bullet_item("How It Works", "Kubernetes readinessProbe/livenessProbe on /api/health with non-blocking Jenkins batch error handling.")
-    bullet_item("Organizational Benefit", "Guarantees high availability (99.99% uptime) and robust build automation.")
+    bullet_item("Why Chosen & How It Works", "Kubernetes readinessProbe/livenessProbe on /api/health with non-blocking Jenkins batch error handling.")
 
     pdf.ln(2)
 
-    # 4. Screenshot Audit Table
-    section_heading("4. Demonstration Screenshot Audit")
-    
-    pdf.set_font("Helvetica", "B", 8.5)
-    pdf.set_fill_color(240, 244, 250)
-    pdf.set_text_color(24, 43, 73)
-    pdf.cell(25, 6, "Page #", border=1, align="C", fill=True)
-    pdf.cell(50, 6, "DevOps Phase", border=1, align="L", fill=True)
-    pdf.cell(115, 6, "Verified Deliverable Output", border=1, align="L", fill=True, new_x="LMARGIN", new_y="NEXT")
-
-    table_data = [
-        ("Page 1", "Docker Build & Images", "docker build output for backend/frontend; docker images list"),
-        ("Page 2", "Container Inspection", "docker inspect, docker logs, and docker exec container shell"),
-        ("Page 3", "UI Version Updates", "Application running with Dark Mode (v2) & Live Search (v3)"),
-        ("Page 4", "Docker Hub Repos", "Docker Hub repositories soum1602/eventportal-frontend & backend"),
-        ("Page 5", "Kubernetes Management", "kubectl apply, get pods, get svc, set image rollout & rollout undo"),
-        ("Page 6", "Jenkins CI/CD Pipeline", "Jenkins Stage View showing Build #10 all stages green/passed"),
-    ]
-
-    pdf.set_font("Helvetica", "", 8.5)
-    pdf.set_text_color(40, 40, 40)
-    for row in table_data:
-        pdf.cell(25, 5.5, row[0], border=1, align="C")
-        pdf.cell(50, 5.5, row[1], border=1, align="L")
-        pdf.cell(115, 5.5, row[2], border=1, align="L", new_x="LMARGIN", new_y="NEXT")
-
-    pdf.ln(4)
-
-    # 5. Evaluation Rubric Table
-    section_heading("5. Evaluation Rubric Summary (100/100 Marks)")
+    # 6. Evaluation Rubric Table
+    section_heading("6. Evaluation Rubric Summary (100/100 Marks)")
 
     pdf.set_font("Helvetica", "B", 8.5)
     pdf.set_fill_color(240, 244, 250)
@@ -188,7 +176,7 @@ def create_pdf(filename="docs/FINAL_CAPSTONE_PROJECT_REPORT.pdf"):
     # Output PDF
     os.makedirs(os.path.dirname(filename), exist_ok=True)
     pdf.output(filename)
-    print(f"PDF successfully generated: {filename}")
+    print(f"PDF with embedded screenshots successfully generated: {filename}")
 
 if __name__ == "__main__":
     create_pdf()
