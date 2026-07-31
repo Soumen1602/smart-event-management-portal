@@ -28,7 +28,7 @@
 const API_BASE =
   (typeof window !== 'undefined' && window.SEMP_API_BASE)
     ? window.SEMP_API_BASE
-    : 'http://backend-service:5000/api';
+    : 'http://localhost:5000/api';
 
 /* ─── STORAGE KEYS — only UI/session state lives here ───────── */
 const KEYS = {
