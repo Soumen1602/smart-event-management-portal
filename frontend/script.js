@@ -19,10 +19,16 @@
 'use strict';
 
 /* ─── CONFIGURATION ─────────────────────────────────────────── */
+/* API_BASE: uses window.SEMP_API_BASE override if set (local dev),
+ * otherwise defaults to the Kubernetes ClusterIP service name so
+ * the frontend pod can reach the backend pod inside the cluster.
+ * For local dev outside K8s, set:
+ *   <script>window.SEMP_API_BASE = 'http://localhost:5000/api';</script>
+ * before this file loads. */
 const API_BASE =
   (typeof window !== 'undefined' && window.SEMP_API_BASE)
     ? window.SEMP_API_BASE
-    : 'http://localhost:5000/api';
+    : 'http://backend-service:5000/api';
 
 /* ─── STORAGE KEYS — only UI/session state lives here ───────── */
 const KEYS = {
