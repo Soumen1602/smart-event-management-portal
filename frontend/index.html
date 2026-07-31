@@ -60,7 +60,7 @@
         </div>
 
         <!-- ── Login Form ── -->
-        <form id="loginForm" class="auth-form animate-fade-in" novalidate aria-label="Sign in form">
+        <form id="loginForm" class="auth-form animate-fade-in" method="POST" novalidate aria-label="Sign in form">
 
           <div class="form-group">
             <label class="form-label" for="loginEmail">
@@ -108,7 +108,7 @@
         </form>
 
         <!-- ── Register Form (hidden by default) ── -->
-        <form id="registerForm" class="auth-form form--hidden animate-fade-in" novalidate aria-label="Create account form">
+        <form id="registerForm" class="auth-form form--hidden animate-fade-in" method="POST" novalidate aria-label="Create account form">
 
           <div class="form-group">
             <label class="form-label" for="regName">
@@ -221,6 +221,6 @@
   </div><!-- /auth-page -->
 
   <script>window.SEMP_API_BASE = 'http://localhost:5000/api';</script>
-  <script src="script.js"></script>
+  <script src="script.js" defer></script>
 </body>
 </html>
