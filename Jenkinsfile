@@ -1,15 +1,15 @@
 /* ============================================================
  * SMART EVENT MANAGEMENT PORTAL — Jenkinsfile
- * Declarative Pipeline — Windows Agent (bat syntax)
+ * Declarative Pipeline — Windows Agent (Fully Resilient)
  *
  * Stages:
  *   1. Checkout
  *   2. Build Backend Image
  *   3. Build Frontend Image
  *   4. Test
- *   5. Docker Push
- *   6. Deploy to Kubernetes  (graceful skip if kubectl unavailable)
- *   7. Verify Deployment     (graceful skip if kubectl unavailable)
+ *   5. Docker Push           (graceful fallback if network/proxy drops)
+ *   6. Deploy to Kubernetes  (graceful fallback if cluster unreachable)
+ *   7. Verify Deployment     (graceful fallback if cluster unreachable)
  * ============================================================ */
 
 pipeline {
@@ -73,7 +73,7 @@ pipeline {
         /* ── 4. Test ───────────────────────────────────────── */
         stage('Test') {
             steps {
-                echo '>>> Running smoke test against the backend container...'
+                echo '>>> Running smoke test against backend container...'
                 bat """
                     docker rm -f semp-smoke-test 2>nul & echo .
 
@@ -98,26 +98,41 @@ pipeline {
         /* ── 5. Docker Push ────────────────────────────────── */
         stage('Docker Push') {
             steps {
-                echo '>>> Logging in to Docker Hub and pushing images...'
-                withCredentials([
-                    usernamePassword(
-                        credentialsId: "${DOCKER_CREDENTIALS}",
-                        usernameVariable: 'DOCKER_USER',
-                        passwordVariable: 'DOCKER_PASS'
-                    )
-                ]) {
-                    bat """
-                        echo %DOCKER_PASS%| docker login -u %DOCKER_USER% --password-stdin
+                script {
+                    try {
+                        echo '>>> Logging in to Docker Hub and pushing images...'
+                        withCredentials([
+                            usernamePassword(
+                                credentialsId: "${DOCKER_CREDENTIALS}",
+                                usernameVariable: 'DOCKER_USER',
+                                passwordVariable: 'DOCKER_PASS'
+                            )
+                        ]) {
+                            bat """
+                                echo %DOCKER_PASS%| docker login -u %DOCKER_USER% --password-stdin
+                                docker push ${BACKEND_IMAGE}:${IMAGE_TAG}
+                                docker push ${FRONTEND_IMAGE}:${IMAGE_TAG}
+                                docker logout
+                            """
+                        }
+                        echo ">>> Pushed ${BACKEND_IMAGE}:${IMAGE_TAG}"
+                        echo ">>> Pushed ${FRONTEND_IMAGE}:${IMAGE_TAG}"
+                    } catch (Exception e) {
+                        echo """
+                        ======================================================
+                        WARNING: Docker Push skipped or encountered network issue.
+                        Error details: ${e.getMessage()}
 
-                        docker push ${BACKEND_IMAGE}:${IMAGE_TAG}
+                        Images were built successfully locally:
+                          • ${BACKEND_IMAGE}:${IMAGE_TAG}
+                          • ${FRONTEND_IMAGE}:${IMAGE_TAG}
 
-                        docker push ${FRONTEND_IMAGE}:${IMAGE_TAG}
-
-                        docker logout
-                    """
+                        Continuing pipeline execution...
+                        ======================================================
+                        """
+                        currentBuild.result = 'UNSTABLE'
+                    }
                 }
-                echo ">>> Pushed ${BACKEND_IMAGE}:${IMAGE_TAG}"
-                echo ">>> Pushed ${FRONTEND_IMAGE}:${IMAGE_TAG}"
             }
         }
 
@@ -151,7 +166,7 @@ pipeline {
                         To deploy manually, run from project root:
                             kubectl apply -f k8s\\
 
-                        This does NOT fail the pipeline.
+                        Continuing pipeline execution...
                         ======================================================
                         '''
                         currentBuild.result = 'UNSTABLE'
@@ -182,8 +197,6 @@ pipeline {
                             kubectl get pods
                             kubectl get services
                             kubectl get deployments
-
-                        This does NOT fail the pipeline.
                         ======================================================
                         '''
                         currentBuild.result = 'UNSTABLE'
@@ -197,41 +210,15 @@ pipeline {
     /* ── Post-build actions ────────────────────────────────── */
     post {
 
-        success {
+        always {
             echo """
             ====================================================
-            SUCCESS - PIPELINE COMPLETED
-            ====================================================
-            Images pushed to Docker Hub:
-              ${BACKEND_IMAGE}:${IMAGE_TAG}
-              ${FRONTEND_IMAGE}:${IMAGE_TAG}
-
-            To deploy manually (if K8s stage was skipped):
-              kubectl apply -f k8s\\
-
-            Frontend URL after deploy:
-              http://<node-ip>:30080
-            ====================================================
-            """
-        }
-
-        failure {
-            echo """
-            ====================================================
-            FAILURE - PIPELINE DID NOT COMPLETE
-            ====================================================
-            Check the stage logs above for the root cause.
-            Common causes on Windows Jenkins:
-              - Docker Desktop not running or daemon not reachable
-              - Invalid dockerhub-credentials in Jenkins
-              - Network issue during docker push
+            PIPELINE EXECUTION FINISHED
+            Status: ${currentBuild.result ?: 'SUCCESS'}
             ====================================================
             """
             bat 'docker rm -f semp-smoke-test 2>nul & echo .'
-        }
-
-        always {
-            echo '>>> Cleaning up local Docker images to free disk space...'
+            echo '>>> Cleaning up local Docker build images...'
             bat """
                 docker rmi ${BACKEND_IMAGE}:${IMAGE_TAG}  2>nul & echo .
                 docker rmi ${FRONTEND_IMAGE}:${IMAGE_TAG} 2>nul & echo .
