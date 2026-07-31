@@ -70,10 +70,10 @@ def create_pdf(filename="docs/FINAL_CAPSTONE_PROJECT_REPORT.pdf"):
         pdf.write(4.5, f"{text}\n")
         pdf.ln(1)
 
-    def embed_image(img_path, caption, max_w=170, max_h=85):
+    def embed_image(img_path, caption, max_w=170):
         if os.path.exists(img_path):
             curr_y = pdf.get_y()
-            if curr_y > 210: # If near bottom of page, add page
+            if curr_y > 200: # If near bottom of page, add new page
                 pdf.add_page()
             
             pdf.ln(2)
@@ -81,7 +81,7 @@ def create_pdf(filename="docs/FINAL_CAPSTONE_PROJECT_REPORT.pdf"):
             pdf.ln(2)
             pdf.set_font("Helvetica", "I", 8.5)
             pdf.set_text_color(100, 100, 100)
-            pdf.cell(0, 5, f"Figure: {caption}", new_x="LMARGIN", new_y="NEXT", align="C")
+            pdf.cell(0, 5, f"Demonstration Proof: {caption}", new_x="LMARGIN", new_y="NEXT", align="C")
             pdf.ln(4)
 
     # 1. Executive Summary
@@ -94,39 +94,38 @@ def create_pdf(filename="docs/FINAL_CAPSTONE_PROJECT_REPORT.pdf"):
     )
 
     # Architecture Diagram Screenshot
-    section_heading("2. System Architecture Diagram")
-    embed_image("docs/architecture.png", "System Architecture & CI/CD Pipeline Flow", max_w=160)
+    section_heading("2. System Architecture & CI/CD Pipeline Flow")
+    embed_image("docs/architecture.png", "High-Level Architecture & Container Workflow", max_w=160)
 
     # 3. Core Implementation Phases & Deliverables
-    section_heading("3. Core Implementation Phases & Deliverables")
-    
-    sub_heading("Phase 1: Source Code Management (Git & GitHub)")
+    section_heading("3. Phase 1: Source Code Management & Versioning")
     bullet_item("Repository Structure", "Decoupled architecture with /frontend, /backend, /k8s, and /docs directories.")
-    bullet_item("Versioning & Tags", "Pushed milestone tags: docker-v1 (initial), docker-v2 (dark mode), docker-v3 (live search).")
+    bullet_item("Git Version Tags", "Pushed milestone tags: docker-v1 (initial), docker-v2 (dark mode), docker-v3 (live search).")
+    bullet_item("Documentation", "Professional README.md with architecture overview, badges, and Docker instructions.")
 
-    sub_heading("Phase 2: Docker Containerization")
-    bullet_item("Backend Dockerfile", "Built using official python:3.11-slim base image exposing port 5000.")
-    bullet_item("Frontend Dockerfile", "Built using lightweight nginx:alpine base image exposing port 80.")
+    # Phase 2: Docker Demonstration Screenshots
+    section_heading("4. Phase 2: Docker Containerization & Commands Proof")
+    body_text("Demonstration evidence showing Docker image builds, container lifecycle execution, inspection, and registry pushing:")
 
-    sub_heading("Phase 3: Kubernetes Orchestration")
-    bullet_item("Services", "Configured ClusterIP (backend:5000) for security and NodePort 30080 for external web access.")
-    bullet_item("Replica Scaling & Rollbacks", "Scaled backend replicas 1 -> 3 -> 5 and verified 'kubectl rollout undo'.")
+    embed_image("docs/pdf_screenshots/page_1.png", "Docker Backend & Frontend Build + docker images & docker ps", max_w=165)
+    embed_image("docs/pdf_screenshots/page_2.png", "Docker Inspect, Logs & Container Shell Execution (docker exec)", max_w=165)
+    embed_image("docs/pdf_screenshots/page_3.png", "Live Docker Container UI (Dark Mode & Event Search Filtering)", max_w=165)
+    embed_image("docs/pdf_screenshots/page_4.png", "Docker Hub Repositories Dashboard (soum1602/eventportal-frontend & backend)", max_w=165)
 
-    sub_heading("Phase 4: Jenkins CI/CD Pipeline")
-    bullet_item("Declarative Pipeline", "Created 7-stage automated Jenkinsfile: Checkout -> Build -> Test -> Push -> Deploy -> Verify.")
+    # Phase 3: Kubernetes Demonstration Screenshots
+    section_heading("5. Phase 3: Kubernetes Orchestration & Rollout Proof")
+    body_text("Demonstration evidence showing Kubernetes manifests apply, pod/service verification, rolling updates, and rollback:")
 
-    pdf.ln(2)
+    embed_image("docs/pdf_screenshots/page_5.png", "kubectl apply, get pods, get svc, set image rollout & rollout undo", max_w=165)
 
-    # 4. Live UI Screenshots Section
-    section_heading("4. Live Application & Feature Screenshots")
+    # Phase 4: Jenkins Demonstration Screenshots
+    section_heading("6. Phase 4: Jenkins CI/CD Pipeline Execution Proof")
+    body_text("Demonstration evidence showing automated Jenkins Declarative Pipeline execution (Build #10) with all stages green:")
 
-    embed_image("docs/screenshots/login.png", "Authentication & Login Screen (Demo Accounts)", max_w=150)
-    embed_image("docs/screenshots/events.png", "Event Discovery Page with Live Search & Dark Mode (Version 3)", max_w=150)
-    embed_image("docs/screenshots/booking.png", "Interactive Ticket Booking & Checkout Interface", max_w=150)
-    embed_image("docs/screenshots/admin.png", "Admin Management Dashboard for Event CRUD Operations", max_w=150)
+    embed_image("docs/pdf_screenshots/page_6.png", "Jenkins Pipeline Stage View & Stage Graph History (Build #10 Success)", max_w=165)
 
-    # 5. Innovation Challenge (20 Marks)
-    section_heading("5. Innovation Challenge Report (20 Marks / 10 Rubric Marks)")
+    # 7. Innovation Challenge (20 Marks)
+    section_heading("7. Innovation Challenge Report (20 Marks / 10 Rubric Marks)")
     body_text("Three innovative features were implemented beyond core requirements to enhance usability and resilience:")
 
     sub_heading("Feature 1: Dynamic Persistent Dark Mode")
@@ -140,8 +139,15 @@ def create_pdf(filename="docs/FINAL_CAPSTONE_PROJECT_REPORT.pdf"):
 
     pdf.ln(2)
 
-    # 6. Evaluation Rubric Table
-    section_heading("6. Evaluation Rubric Summary (100/100 Marks)")
+    # 8. Live UI Screenshots Section
+    section_heading("8. Application User Interface Screenshots")
+    embed_image("docs/screenshots/login.png", "Authentication & Login Screen (Demo Accounts)", max_w=150)
+    embed_image("docs/screenshots/events.png", "Event Discovery Page with Live Search & Dark Mode", max_w=150)
+    embed_image("docs/screenshots/booking.png", "Interactive Ticket Booking & Checkout Interface", max_w=150)
+    embed_image("docs/screenshots/admin.png", "Admin Management Dashboard for Event CRUD Operations", max_w=150)
+
+    # 9. Evaluation Rubric Table
+    section_heading("9. Evaluation Rubric Summary (100/100 Marks)")
 
     pdf.set_font("Helvetica", "B", 8.5)
     pdf.set_fill_color(240, 244, 250)
@@ -176,7 +182,7 @@ def create_pdf(filename="docs/FINAL_CAPSTONE_PROJECT_REPORT.pdf"):
     # Output PDF
     os.makedirs(os.path.dirname(filename), exist_ok=True)
     pdf.output(filename)
-    print(f"PDF with embedded screenshots successfully generated: {filename}")
+    print(f"Complete PDF report with ALL screenshots successfully generated: {filename}")
 
 if __name__ == "__main__":
     create_pdf()
